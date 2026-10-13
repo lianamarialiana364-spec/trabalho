@@ -1,0 +1,40 @@
+CODESTART NO VS CODE
+
+1. Extraia este ZIP.
+2. No VS Code: Arquivo > Abrir Pasta > selecione CodeStart.
+3. Abra Terminal > Novo Terminal.
+4. Execute:
+   python -m venv .venv
+
+5. Ative o ambiente:
+   Linux / Chromebook / Codespaces:
+   source .venv/bin/activate
+
+   Windows (Prompt de Comando):
+   .venv\Scripts\activate.bat
+
+   Windows (PowerShell):
+   .venv\Scripts\Activate.ps1
+
+6. Execute:
+   python -m pip install -r requirements.txt
+   python app.py
+
+Se no Linux o comando python não existir, use python3 para criar o ambiente.
+Se faltar o módulo venv no Linux do Chromebook, instale python3-venv.
+
+7. Abra http://127.0.0.1:5000
+   No Codespaces, use a aba Portas e abra a porta 5000 no navegador.
+
+TUTORA COM IA (opcional)
+Sem chave, a busca no material local funciona.
+Para ativar IA, defina OPENAI_API_KEY no terminal antes de executar app.py.
+Linux:
+   export OPENAI_API_KEY='SUA_CHAVE'
+PowerShell:
+   $env:OPENAI_API_KEY='SUA_CHAVE'
+Não publique sua chave no GitHub.
+Confira a cobrança na sua conta da API.
+
+O navegador vscode.dev sozinho não executa o servidor Python.
+Use VS Code com Python instalado ou GitHub Codespaces.
