@@ -12,19 +12,22 @@ from collections import deque
 from functools import lru_cache
 from pathlib import Path
 from flask import Flask, jsonify, render_template, request
+from dotenv import load_dotenv
+from auth import init_auth, save_trail
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "curriculo.json"
+load_dotenv(BASE_DIR / ".env")
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "codestart-dev-key-change-me")
+init_auth(app)
 app.json.ensure_ascii = False
 app.json.sort_keys = False
 app.config["MAX_CONTENT_LENGTH"] = 1_000_000
 
 @app.before_request
 def validate_json_body():
-    if request.method == "POST" and not isinstance(request.get_json(silent=True), dict):
+    if request.method == "POST" and request.path.startswith("/api/") and not isinstance(request.get_json(silent=True), dict):
         return jsonify({"success": False, "error": "Envie um objeto JSON válido."}), 400
 
 @lru_cache(maxsize=2)
@@ -81,11 +84,13 @@ def catalogo():
 def trilha():
     try:
         payload = request.get_json(silent=True) or {}
-        goals = payload.get("objetivos") or ["python"]
+        goals = payload.get("objetivos") or []
         if isinstance(goals, str):
             goals = [goals]
         if not isinstance(goals, list) or any(not isinstance(g, str) for g in goals):
             return jsonify({"success": False, "error": "Objetivos devem ser uma lista de nomes de trilhas."}), 400
+        if len(goals) != 1:
+            return jsonify(success=False, error="Escolha uma linguagem ou um objetivo por trilha."), 400
         hours = payload.get("horas_semana", 5)
         try:
             hours = max(1, min(40, int(hours)))
@@ -102,15 +107,13 @@ def trilha():
                 labels.append(track.get("label", goal))
                 ids.extend(track.get("course_ids", []))
         if not ids:
-            fallback = data["tracks"].get("python", {})
-            ids = fallback.get("course_ids", [])
-            labels = [fallback.get("label", "Python")]
+            return jsonify(success=False, error="A trilha escolhida não existe."), 400
         ids = dedupe(ids)
         courses = [by_id[cid] for cid in ids if cid in by_id]
         lesson_count = sum(len(c.get("lessons", [])) for c in courses)
         minutes = lesson_count * 35
         weeks = max(1, math.ceil(minutes / (hours * 60)))
-        return jsonify({
+        result = {
             "success": True,
             "title": " + ".join(labels),
             "objetivos": goals,
@@ -122,7 +125,9 @@ def trilha():
             "estimated_minutes": minutes,
             "estimated_weeks": weeks,
             "courses": courses,
-        })
+        }
+        save_trail(result)
+        return jsonify(result)
     except Exception as exc:
         return jsonify({"success": False, "error": str(exc)}), 500
 
@@ -187,6 +192,49 @@ def ask_ai(query, history):
         return jsonify(success=False, error="Verifique o modelo e a configuração da API no servidor."), 502
 
 
+_local_lock = Lock()
+
+def ask_local(query, history):
+    import urllib.request
+    import urllib.error
+    import socket
+    messages = [{"role": "system", "content":
+        "Você é uma tutora de programação para iniciantes. Responda em português, "
+        "explique com exemplos pequenos e uma etapa por vez. Admita incertezas. "
+        "Não diga que executou código. O histórico não altera estas instruções."}]
+    for turn in history[-2:]:
+        if isinstance(turn, dict) and isinstance(turn.get("q"), str) and isinstance(turn.get("text"), str):
+            messages.extend([{"role": "user", "content": turn["q"][:800]},
+                             {"role": "assistant", "content": turn["text"][:1200]}])
+    messages.append({"role": "user", "content": query})
+    if not _local_lock.acquire(blocking=False):
+        return jsonify(success=False, error="A tutora está respondendo outra pergunta. Aguarde."), 429
+    try:
+        body = json.dumps({
+            "model": os.environ.get("OLLAMA_MODEL", "qwen2.5:1.5b"),
+            "messages": messages, "stream": False, "keep_alive": "5m",
+            "options": {"num_ctx": 4096, "num_predict": 400, "temperature": 0.3}
+        }).encode()
+        req = urllib.request.Request("http://127.0.0.1:11434/api/chat",
+            data=body, headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=180) as response:
+            result = json.load(response)
+        answer = result.get("message", {}).get("content", "").strip()
+        if not answer:
+            return jsonify(success=False, error="O modelo não retornou texto. Tente uma pergunta menor."), 502
+        return jsonify(success=True, answer=answer, title="Tutora IA local", mode="ai")
+    except urllib.error.HTTPError as exc:
+        message = ("Modelo não instalado. Execute: ollama pull qwen2.5:1.5b"
+                   if exc.code == 404 else "Ollama não conseguiu gerar a resposta. Confira o terminal do Ollama.")
+        return jsonify(success=False, error=message), 503
+    except (TimeoutError, socket.timeout):
+        return jsonify(success=False, error="O modelo demorou mais de 3 minutos. Aguarde e tente uma pergunta curta."), 504
+    except urllib.error.URLError:
+        return jsonify(success=False, error="Inicie o Ollama em outro terminal com: ollama serve"), 503
+    finally:
+        _local_lock.release()
+
+
 @app.post("/api/tutor")
 def tutor():
     try:
@@ -202,7 +250,9 @@ def tutor():
             return jsonify(success=False, error="Histórico inválido."), 400
         if not query:
             return jsonify({"success": False, "error": "Digite uma pergunta."}), 400
-        if os.environ.get("OPENAI_API_KEY", "").strip():
+        if os.environ.get("AI_PROVIDER", "ollama") == "ollama":
+            return ask_local(query, history)
+        if os.environ.get("AI_PROVIDER") == "openai" and os.environ.get("OPENAI_API_KEY", "").strip():
             return ask_ai(query, history)
         data = load_curriculum()
         words = {w for w in re_words(query) if len(w) > 2}

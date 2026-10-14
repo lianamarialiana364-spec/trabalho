@@ -1,0 +1,1 @@
+Leia LEIA-ME.md. Depois de instalar Ollama, execute bash INICIAR.sh na pasta do projeto.
