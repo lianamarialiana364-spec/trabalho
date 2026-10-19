@@ -1,0 +1,1 @@
+Leia LEIA-ME.md. Resumo: pip install -r requirements.txt && python app.py (abre na porta 5000).

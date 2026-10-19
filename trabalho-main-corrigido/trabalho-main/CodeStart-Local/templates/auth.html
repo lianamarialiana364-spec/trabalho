@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodeStart — Sua conta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body>
+<main class="auth-shell">
+<a class="auth-brand" href="/"><span>&lt;/&gt;</span> CodeStart</a>
+<div class="auth-card">
+{% set titles = {'login':'Que bom te ver de novo','register':'Crie sua conta','verify':'Confirme seu e-mail','forgot':'Esqueceu sua senha?','reset':'Escolha uma nova senha'} %}
+<p class="auth-eyebrow">SEU ESPAÇO PARA APRENDER</p>
+<h1>{{ titles[mode] }}</h1>
+<p class="auth-subtitle">
+{% if mode == 'login' %}Entre para fazer os cursos, salvar seu progresso e acessar sua trilha.
+{% elif mode == 'register' %}Cadastre-se e confirme seu e-mail com um código de seis dígitos.
+{% elif mode == 'verify' %}Digite o código na mesma aba em que iniciou o cadastro. Ele vale por 15 minutos.
+{% elif mode == 'forgot' %}Enviaremos um código para você redefinir sua senha.
+{% else %}Use o código recebido e crie uma senha diferente.{% endif %}
+</p>
+{% if error %}<p class="auth-message error" role="alert">{{ error }}</p>{% endif %}
+{% if notice %}<p class="auth-message" role="status">{{ notice }}</p>{% endif %}
+{% if request.args.get('confirmed') %}<p class="auth-message success">E-mail confirmado. Agora entre com sua senha.</p>{% endif %}
+{% if request.args.get('reset') %}<p class="auth-message success">Senha alterada. Entre novamente na sua conta.</p>{% endif %}
+{% if mode == 'verify' and dev_code %}
+<p class="auth-message dev" role="status">Modo de teste: o envio de e-mail ainda não foi configurado neste servidor, então o código aparece aqui.</p>
+<div class="auth-code-box"><small>Seu código de confirmação</small><strong>{{ dev_code }}</strong></div>
+{% endif %}
+<form method="post" id="auth-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+{% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+{% if mode == 'register' %}
+<label for="name">Seu nome</label>
+<input id="name" name="name" autocomplete="name" minlength="2" maxlength="80" required value="{{ request.form.get('name','') }}">
+{% endif %}
+{% if mode in ['login','register','forgot'] %}
+<label for="email">E-mail</label>
+<input id="email" name="email" type="email" autocomplete="email" maxlength="254" required value="{{ request.form.get('email','') }}">
+{% endif %}
+{% if mode in ['verify','reset'] %}
+<label for="code">Código de verificação</label>
+<input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required>
+{% endif %}
+{% if mode in ['login','register','reset'] %}
+<label for="password">{{ 'Nova senha' if mode == 'reset' else 'Senha' }}</label>
+<div class="pw-wrap"><input id="password" name="password" type="password" autocomplete="{{ 'current-password' if mode == 'login' else 'new-password' }}" {% if mode != 'login' %}minlength="10"{% endif %} maxlength="128" required><button type="button" class="pw-toggle" data-target="password" aria-label="Mostrar senha">Mostrar</button></div>
+{% if mode != 'login' %}
+<p class="auth-help">Entre 10 e 128 caracteres. Uma frase longa é uma boa opção.</p>
+<label for="confirm_password">Confirme a senha</label>
+<div class="pw-wrap"><input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required><button type="button" class="pw-toggle" data-target="confirm_password" aria-label="Mostrar senha">Mostrar</button></div>
+{% endif %}
+{% endif %}
+<button class="auth-submit" type="submit">{{ {'login':'Entrar','register':'Criar conta e receber código','verify':'Confirmar e-mail','forgot':'Enviar código de recuperação','reset':'Salvar nova senha'}[mode] }}</button>
+</form>
+<nav class="auth-links" aria-label="Acesso à conta">
+{% if mode == 'login' %}
+<a href="{{ url_for('auth.register', next=next_url) if next_url else url_for('auth.register') }}">Criar conta</a>
+<a href="{{ url_for('auth.forgot') }}">Esqueci minha senha</a>
+{% elif mode == 'verify' %}
+<a href="{{ url_for('auth.register') }}">Refazer cadastro / pedir outro código</a>
+<a href="{{ url_for('auth.login') }}">Voltar ao login</a>
+{% elif mode == 'reset' %}
+<a href="{{ url_for('auth.forgot') }}">Solicitar outro código</a>
+<a href="{{ url_for('auth.login') }}">Voltar ao login</a>
+{% else %}
+<a href="{{ url_for('auth.login', next=next_url) if next_url else url_for('auth.login') }}">Já tenho uma conta</a>
+{% endif %}
+</nav>
+{% if mode in ['login','register'] %}
+<div class="auth-divider">OU</div>
+<a class="auth-guest" href="/">Continuar sem entrar</a>
+<p class="auth-help" style="text-align:center">Dá para explorar o site, o editor, os jogos e o tutor sem conta. Só os cursos exigem login.</p>
+{% endif %}
+</div>
+<p class="auth-footer">Aprenda no seu ritmo. Uma aula de cada vez.</p>
+</main>
+<script>
+document.querySelectorAll('.pw-toggle').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var input=document.getElementById(btn.dataset.target), show=input.type==='password';
+    input.type=show?'text':'password';
+    btn.textContent=show?'Ocultar':'Mostrar';
+    btn.setAttribute('aria-label',show?'Ocultar senha':'Mostrar senha');
+  });
+});
+var form=document.getElementById('auth-form');
+if(form)form.addEventListener('submit',function(){var b=form.querySelector('.auth-submit');setTimeout(function(){b.disabled=true;},0);});
+</script>
+</body>
+</html>

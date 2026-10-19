@@ -1,0 +1,63 @@
+/* CodeStart — páginas de conta (login, cadastro, código, recuperação) */
+:root{
+  --bg:#090f1d; --card:#101a2d; --line:#28344b; --field:#0b1424; --field-line:#34425e;
+  --text:#e2e8f0; --muted:#94a3b8; --brand:#6366f1; --brand-hover:#4f46e5; --accent:#a5b4fc;
+  --ok:#34d399; --err:#fb7185; --warn:#fbbf24;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background-color:var(--bg);
+  background-image:radial-gradient(ellipse at 85% 0%,#4f46e526,transparent 45%),
+                   radial-gradient(ellipse at 0% 100%,#10b98114,transparent 40%);
+  background-attachment:fixed;
+  color:var(--text); -webkit-font-smoothing:antialiased;
+}
+.auth-shell{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:32px 16px}
+.auth-brand{display:inline-flex;align-items:center;gap:12px;color:#fff;text-decoration:none;font-weight:800;font-size:22px;letter-spacing:-.02em}
+.auth-brand span{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font:700 15px "Fira Code",ui-monospace,monospace;
+  background:linear-gradient(135deg,#4f46e5,#818cf8);box-shadow:0 10px 30px #6366f155}
+.auth-card{width:100%;max-width:440px;background:linear-gradient(145deg,#172238,#101a2d);border:1px solid var(--line);
+  border-radius:24px;padding:34px 30px;box-shadow:0 30px 80px #00000066}
+.auth-eyebrow{margin:0 0 10px;font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--accent)}
+.auth-card h1{margin:0 0 8px;font-size:28px;line-height:1.15;letter-spacing:-.03em;color:#f1f5f9}
+.auth-subtitle{margin:0 0 22px;font-size:14px;line-height:1.65;color:var(--muted)}
+.auth-card form{display:flex;flex-direction:column}
+.auth-card label{margin:14px 0 7px;font-size:12px;font-weight:600;color:#b7c4d9}
+.auth-card input:not([type=hidden]){width:100%;padding:13px 14px;font:inherit;font-size:15px;color:#eef2ff;background:var(--field);
+  border:1px solid var(--field-line);border-radius:12px;transition:border-color .15s,box-shadow .15s}
+.auth-card input::placeholder{color:#5b6b87}
+.auth-card input:hover{border-color:#47587a}
+.auth-card input:focus-visible,.auth-card button:focus-visible,.auth-card a:focus-visible{outline:3px solid #a5b4fc;outline-offset:2px}
+.auth-card input:focus{border-color:var(--brand);box-shadow:0 0 0 3px #6366f133}
+.auth-card input[name=code]{text-align:center;font:600 28px "Fira Code",ui-monospace,monospace;letter-spacing:.4em;padding-left:.8em}
+.auth-help{margin:7px 0 0;font-size:12px;color:var(--muted)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:78px!important}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 10px;font:600 12px Inter,sans-serif;
+  color:var(--accent);background:transparent;border:0;border-radius:8px;cursor:pointer}
+.pw-toggle:hover{background:#6366f126}
+.auth-submit{margin-top:24px;padding:14px 18px;font:700 15px Inter,sans-serif;color:#fff;background:var(--brand);border:1px solid #818cf8;
+  border-radius:12px;cursor:pointer;transition:background .15s,transform .05s;box-shadow:0 10px 24px #6366f13d}
+.auth-submit:hover{background:var(--brand-hover)}
+.auth-submit:active{transform:translateY(1px)}
+.auth-submit:disabled{opacity:.6;cursor:wait}
+.auth-message{margin:0 0 6px;padding:12px 14px;font-size:13px;line-height:1.55;border-radius:12px;background:#1b2942;border:1px solid #394763;color:#cbd5e1}
+.auth-message.error{background:#4c0519aa;border-color:#be123c;color:#fecdd3}
+.auth-message.success{background:#064e3baa;border-color:#059669;color:#a7f3d0}
+.auth-message.dev{background:#451a03aa;border-color:#b45309;color:#fde68a}
+.auth-code-box{margin:6px 0 4px;padding:16px;text-align:center;border-radius:14px;background:#0b1424;border:1px dashed #b45309}
+.auth-code-box small{display:block;margin-bottom:6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#fcd34d}
+.auth-code-box strong{font:700 34px "Fira Code",ui-monospace,monospace;letter-spacing:.3em;padding-left:.3em;color:#fff}
+.auth-links{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px 16px;margin-top:20px;font-size:13px}
+.auth-links a{color:var(--accent);text-decoration:none}.auth-links a:hover{text-decoration:underline}
+.auth-guest{display:block;margin-top:18px;padding:12px 16px;text-align:center;font-size:14px;font-weight:600;color:#cbd5e1;text-decoration:none;
+  border:1px solid var(--field-line);border-radius:12px;background:#142137;transition:background .15s}
+.auth-guest:hover{background:#1b2a45}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:22px 0 0;font-size:11px;letter-spacing:.12em;color:#64748b}
+.auth-divider::before,.auth-divider::after{content:"";height:1px;flex:1;background:var(--line)}
+.auth-footer{margin:0;font-size:13px;color:#64748b;text-align:center}
+@media(max-width:480px){.auth-card{padding:26px 20px;border-radius:20px}.auth-card h1{font-size:24px}.auth-card input[name=code]{font-size:24px;letter-spacing:.3em}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
